@@ -1,0 +1,59 @@
+name: DevOps CI Workflow
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate-and-test:
+    name: Build, Lint and Validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Set up Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 📦 Install Linters
+        run: |
+          npm install -g htmlhint
+
+      - name: 🔍 Lint HTML Files
+        run: |
+          echo "Running HTMLHint on all HTML files..."
+          htmlhint "**/*.html" --rules "doctype-first=true,tag-pair=true,spec-char-escape=false,id-unique=true,src-not-empty=true,attr-no-duplication=true"
+
+      - name: 🧪 Validate Project Structure and Assets
+        run: |
+          echo "Checking essential files and assets..."
+          REQUIRED_FILES=(
+            "index.html"
+            "gallery.html"
+            "css/style.css"
+            "css/gallery.css"
+            "scripts/script.js"
+          )
+          for file in "${REQUIRED_FILES[@]}"; do
+            if [ -f "$file" ]; then
+              echo "✅ Found: $file"
+            else
+              echo "❌ Missing required file: $file"
+              exit 1
+            fi
+          done
+
+      - name: 🚀 Report CI Status
+        if: success()
+        run: |
+          echo "=========================================="
+          echo "🎉 All CI checks passed successfully!"
+          echo "Commit SHA : ${{ github.sha }}"
+          echo "Triggered By: ${{ github.event_name }}"
+          echo "Actor       : ${{ github.actor }}"
+          echo "=========================================="
